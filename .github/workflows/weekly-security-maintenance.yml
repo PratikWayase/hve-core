@@ -19,13 +19,13 @@ permissions:
   contents: read
 
 jobs:
-    # Job 1: Validate dependency pinning
+  # Job 1: Validate dependency pinning
   validate-pinning:
     name: Validate Dependency Pinning Compliance
     uses: ./.github/workflows/dependency-pinning-scan.yml
     permissions:
       contents: read
-      security-events: write  # Required for SARIF upload to Security tab
+      security-events: write
     with:
       soft-fail: true
       upload-sarif: true
@@ -46,7 +46,7 @@ jobs:
     uses: ./.github/workflows/codeql-analysis.yml
     permissions:
       contents: read
-      security-events: write  # Required for SARIF upload to Security tab
+      security-events: write
       actions: read
 
   # Job 4: Generate consolidated summary
@@ -67,7 +67,6 @@ jobs:
           $staleCount = '${{ needs.check-staleness.outputs.stale-count }}'
           $codeqlResult = '${{ needs.codeql-analysis.result }}'
           
-          # Determine overall status
           $hasIssues = $false
           if ($unpinnedCount -ne '0') { $hasIssues = $true }
           if ($staleCount -ne '0') { $hasIssues = $true }
@@ -111,10 +110,6 @@ jobs:
           })
           
           $(if ($staleCount -ne '0') {
-            # Load the staleness report to show details
-            # Note: Artifacts are not automatically shared between jobs
-            # This will only work if the file exists in the runner's filesystem
-            # Consider using job outputs or downloading artifacts explicitly
             $stalenessReport = if (Test-Path 'logs/sha-staleness-results.json') {
               Get-Content 'logs/sha-staleness-results.json' | ConvertFrom-Json
             }
@@ -185,7 +180,6 @@ jobs:
           $unpinnedCount = '${{ needs.validate-pinning.outputs.unpinned-count }}'
           $staleCount = '${{ needs.check-staleness.outputs.stale-count }}'
           
-          # Informational output - workflow succeeds but logs warnings
           if ($unpinnedCount -ne '0') {
             Write-Output "::warning::Found $unpinnedCount unpinned dependencies. Review build warnings for details."
           }
@@ -197,6 +191,7 @@ jobs:
           if ($unpinnedCount -eq '0' -and $staleCount -eq '0') {
             Write-Output "::notice::All dependencies are properly pinned and up-to-date!"
           }
+
       - name: Create or Update Staleness Issue
         if: ${{ !cancelled() && needs.check-staleness.result == 'success' }}
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea
@@ -207,69 +202,61 @@ jobs:
 
             const issueTitle = "Security: Stale dependency SHAs detected";
 
-            const issues = await github.paginate(github.rest.issues.listForRepo,{
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
               owner: context.repo.owner,
               repo: context.repo.repo,
               state: "open",
-              per_page:100
+              per_page: 100
             });
 
             const existingIssue = issues.find(i => i.title === issueTitle);
 
             if (staleCount > 0) {
+              const body = [
+                "## Stale GitHub Action SHAs Detected",
+                "",
+                `${staleCount} dependencies have SHA pins older than ${threshold} days.`,
+                "",
+                "Please run:",
+                "",
+                "```powershell",
+                "npm run sha-staleness",
+                "```",
+                "",
+                "Then update outdated SHAs using:",
+                "",
+                "```powershell",
+                "scripts/security/Update-ActionSHAPinning.ps1 -Path .github/workflows -UpdateStale",
+                "```"
+              ].join("\n");
 
-  const body = [
-    "## Stale GitHub Action SHAs Detected",
-    "",
-    `${staleCount} dependencies have SHA pins older than ${threshold} days.`,
-    "",
-    "Please run:",
-    "",
-    "```powershell",
-    "npm run sha-staleness",
-    "```",
-    "",
-    "Then update outdated SHAs using:",
-    "",
-    "```powershell",
-    "scripts/security/Update-ActionSHAPinning.ps1 -Path .github/workflows -UpdateStale",
-    "```"
-  ].join("\n");
+              if (existingIssue) {
+                await github.rest.issues.update({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: existingIssue.number,
+                  body: body
+                });
+              } else {
+                await github.rest.issues.create({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  title: issueTitle,
+                  body: body
+                });
+              }
+            } else if (existingIssue) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existingIssue.number,
+                body: "All action SHAs are now within the freshness threshold. Closing automatically."
+              });
 
-  if (existingIssue) {
-
-    await github.rest.issues.update({
-      owner: context.repo.owner,
-      repo: context.repo.repo,
-      issue_number: existingIssue.number,
-      body: body
-    });
-
-  } else {
-
-    await github.rest.issues.create({
-      owner: context.repo.owner,
-      repo: context.repo.repo,
-      title: issueTitle,
-      body: body
-    });
-
-  }
-
-} else if (existingIssue) {
-
-  await github.rest.issues.createComment({
-    owner: context.repo.owner,
-    repo: context.repo.repo,
-    issue_number: existingIssue.number,
-    body: "All action SHAs are now within the freshness threshold. Closing automatically."
-  });
-
-  await github.rest.issues.update({
-    owner: context.repo.owner,
-    repo: context.repo.repo,
-    issue_number: existingIssue.number,
-    state: "closed"
-  });
-
-}
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existingIssue.number,
+                state: "closed"
+              });
+            }
