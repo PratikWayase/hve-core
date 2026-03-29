@@ -401,4 +401,147 @@ Describe 'Link-Lang-Check Integration' -Tag 'Integration' {
     }
 }
 
+#endregion 
+
+#region OutputPath Parameter Tests
+
+Describe 'OutputPath Parameter' -Tag 'Unit' {
+    Context 'Default OutputPath' {
+        BeforeEach {
+            $script:RepoRoot = $TestDrive
+            $script:DefaultOutputPath = Join-Path $script:RepoRoot "logs/link-lang-check-results.json"
+            $script:MockLinkLang = Join-Path $TestDrive 'mock-link-lang-empty.ps1'
+
+            @'
+param([string[]]$ExcludePaths = @())
+Write-Output "[]"
+'@ | Set-Content -Path $script:MockLinkLang -Encoding utf8
+
+            Mock git {
+                $global:LASTEXITCODE = 0
+                return $script:RepoRoot
+            } -ParameterFilter { $args -contains 'rev-parse' }
+
+            Mock Join-Path {
+                return $script:MockLinkLang
+            } -ParameterFilter { $ChildPath -eq 'Link-Lang-Check.ps1' }
+
+            function Set-CIOutput { param($Name, $Value) }
+            function Set-CIEnv { param($Name, $Value) }
+            function Write-CIAnnotation { param($Message, $Level, $File, $Line) }
+            function Write-CIStepSummary { param($Content) }
+        }
+
+        It 'writes to default path when OutputPath not specified' {
+            $logsDir = Join-Path $script:RepoRoot "logs"
+            if (Test-Path $logsDir) { Remove-Item $logsDir -Recurse -Force }
+
+            Invoke-LinkLanguageCheckCore -ExcludePaths @() -OutputPath $script:DefaultOutputPath | Out-Null
+
+            Test-Path $script:DefaultOutputPath | Should -BeTrue
+
+            $content = Get-Content $script:DefaultOutputPath -Raw
+            $json = $content | ConvertFrom-Json
+            $json.summary.total_issues | Should -Be 0
+        }
+    }
+
+    Context 'Custom OutputPath' {
+        BeforeEach {
+            $script:RepoRoot = $TestDrive
+            $script:CustomOutputPath = Join-Path $TestDrive "custom/results/custom-output.json"
+            $script:MockLinkLang = Join-Path $TestDrive 'mock-link-lang-empty.ps1'
+
+            @'
+param([string[]]$ExcludePaths = @())
+Write-Output "[]"
+'@ | Set-Content -Path $script:MockLinkLang -Encoding utf8
+
+            Mock git {
+                $global:LASTEXITCODE = 0
+                return $script:RepoRoot
+            } -ParameterFilter { $args -contains 'rev-parse' }
+
+            Mock Join-Path {
+                return $script:MockLinkLang
+            } -ParameterFilter { $ChildPath -eq 'Link-Lang-Check.ps1' }
+
+            function Set-CIOutput { param($Name, $Value) }
+            function Set-CIEnv { param($Name, $Value) }
+            function Write-CIAnnotation { param($Message, $Level, $File, $Line) }
+            function Write-CIStepSummary { param($Content) }
+        }
+
+        It 'writes to custom path when OutputPath is specified' {
+            $customDir = Split-Path $script:CustomOutputPath -Parent
+            if (Test-Path $customDir) { Remove-Item $customDir -Recurse -Force }
+
+            Invoke-LinkLanguageCheckCore -ExcludePaths @() -OutputPath $script:CustomOutputPath | Out-Null
+
+            Test-Path $script:CustomOutputPath | Should -BeTrue
+            Test-Path (Join-Path $script:RepoRoot "logs/link-lang-check-results.json") | Should -BeFalse
+
+            $content = Get-Content $script:CustomOutputPath -Raw
+            $json = $content | ConvertFrom-Json
+            $json.script | Should -Be 'link-lang-check'
+        }
+
+        It 'creates parent directory if it does not exist' {
+            $deepPath = Join-Path $TestDrive "a/b/c/output.json"
+            $parentDir = Split-Path $deepPath -Parent
+
+            if (Test-Path $parentDir) { Remove-Item $parentDir -Recurse -Force }
+
+            Invoke-LinkLanguageCheckCore -ExcludePaths @() -OutputPath $deepPath | Out-Null
+
+            Test-Path $parentDir | Should -BeTrue
+            Test-Path $deepPath | Should -BeTrue
+        }
+    }
+
+    Context 'OutputPath with issues found' {
+        BeforeEach {
+            $script:RepoRoot = $TestDrive
+            $script:TestOutputPath = Join-Path $TestDrive "test-results/issues.json"
+            $script:MockLinkLang = Join-Path $TestDrive 'mock-link-lang-issues.ps1'
+
+            @'
+param([string[]]$ExcludePaths = @())
+$json = @"
+[{"file":"docs/test.md","line_number":5,"original_url":"https://example.com/en-us/page"}]
+"@
+Write-Output $json
+'@ | Set-Content -Path $script:MockLinkLang -Encoding utf8
+
+            Mock git {
+                $global:LASTEXITCODE = 0
+                return $script:RepoRoot
+            } -ParameterFilter { $args -contains 'rev-parse' }
+
+            Mock Join-Path {
+                return $script:MockLinkLang
+            } -ParameterFilter { $ChildPath -eq 'Link-Lang-Check.ps1' }
+
+            function Set-CIOutput { param($Name, $Value) }
+            function Set-CIEnv { param($Name, $Value) }
+            function Write-CIAnnotation { param($Message, $Level, $File, $Line) }
+            function Write-CIStepSummary { param($Content) }
+            function Get-CIPlatform { return 'github' }
+            function ConvertTo-AzureDevOpsEscaped { param($Value) return $Value }
+        }
+
+        It 'writes issues to specified OutputPath' {
+            Invoke-LinkLanguageCheckCore -ExcludePaths @() -OutputPath $script:TestOutputPath | Out-Null
+
+            Test-Path $script:TestOutputPath | Should -BeTrue
+
+            $content = Get-Content $script:TestOutputPath -Raw
+            $json = $content | ConvertFrom-Json
+            $json.summary.total_issues | Should -Be 1
+            $json.issues[0].file | Should -Be 'docs/test.md'
+            $json.issues[0].original_url | Should -Match 'en-us'
+        }
+    }
+}
+
 #endregion
