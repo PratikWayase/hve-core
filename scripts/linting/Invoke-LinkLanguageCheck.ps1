@@ -46,6 +46,11 @@ function Invoke-LinkLanguageCheckCore {
         return 1
     }
 
+    $repoRoot = git rev-parse --show-toplevel 
+    if (-not [System.IO.Path]::IsPathRooted($OutputPath)) {
+        $OutputPath = Join-Path $repoRoot $OutputPath
+    }
+
     Write-Host "🔍 Checking for URLs with language paths..." -ForegroundColor Cyan
 
     try {
@@ -182,3 +187,4 @@ if ($MyInvocation.InvocationName -ne '.') {
     }
 }
 #endregion Main Execution
+
