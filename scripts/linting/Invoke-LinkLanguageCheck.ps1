@@ -42,8 +42,8 @@ function Invoke-LinkLanguageCheckCore {
 
     $repoRoot = git rev-parse --show-toplevel 2>$null
     if ($LASTEXITCODE -ne 0) {
-    Write-Error "Not in a git repository"
-    return 1
+        Write-Error "Not in a git repository"
+        return 1
     }
 
     
@@ -96,7 +96,7 @@ function Invoke-LinkLanguageCheckCore {
             # Ensure output directory exists
             $outputDir = Split-Path -Parent $OutputPath
             if ($outputDir -and -not (Test-Path $outputDir)) {
-            New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
+                New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
             }
 
             # Write JSON to file
@@ -150,7 +150,7 @@ $(($uniqueFiles | ForEach-Object {
         # Ensure output directory exists
         $outputDir = Split-Path -Parent $OutputPath
         if ($outputDir -and -not (Test-Path $outputDir)) {
-        New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
+            New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
         }
 
         # Write JSON to file

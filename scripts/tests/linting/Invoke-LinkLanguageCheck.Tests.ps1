@@ -105,7 +105,7 @@ Write-Output $json
         }
 
         It 'Returns failure exit code and records outputs' {
-            Invoke-LinkLanguageCheckCore -ExcludePaths @('scripts/tests/**') | Should -Be 1
+            Invoke-LinkLanguageCheckCore -ExcludePaths @('scripts/tests/**') -OutputPath 'logs/link-lang-check-results.json' | Should -Be 1
             Should -Invoke Set-CIOutput -Times 1
             Should -Invoke Set-CIEnv -Times 1
             Should -Invoke Write-CIAnnotation -Times 2
@@ -124,7 +124,7 @@ Write-Output $json
         It 'Calls Get-StandardTimestamp for result JSON timestamp' {
             Mock Get-StandardTimestamp { return 'MOCK-TIMESTAMP' }
 
-            Invoke-LinkLanguageCheckCore -ExcludePaths @('scripts/tests/**') | Out-Null
+            Invoke-LinkLanguageCheckCore -ExcludePaths @('scripts/tests/**') -OutputPath 'logs/link-lang-check-results.json' | Out-Null
 
             Should -Invoke Get-StandardTimestamp -Times 1
 
@@ -167,7 +167,7 @@ Write-Output $json
 
         It 'Returns success exit code and records outputs' {
             $script:WriteHostMessages = @()
-            Invoke-LinkLanguageCheckCore -ExcludePaths @() | Should -Be 0
+            Invoke-LinkLanguageCheckCore -ExcludePaths @() -OutputPath 'logs/link-lang-check-results.json' | Should -Be 0
             Should -Invoke Set-CIOutput -Times 1
             Should -Invoke Write-CIStepSummary -Times 1
             Should -Invoke Write-Host -Times 1 -ParameterFilter { $Object -like '*✅ No URLs with language paths found*' }
@@ -178,7 +178,7 @@ Write-Output $json
         It 'Calls Get-StandardTimestamp for empty result JSON timestamp' {
             Mock Get-StandardTimestamp { return 'MOCK-TIMESTAMP' }
 
-            Invoke-LinkLanguageCheckCore -ExcludePaths @() | Out-Null
+            Invoke-LinkLanguageCheckCore -ExcludePaths @() -OutputPath 'logs/link-lang-check-results.json' | Out-Null
 
             Should -Invoke Get-StandardTimestamp -Times 1
 
@@ -460,7 +460,7 @@ Write-Output "[]"
             $logsDir = Join-Path $script:RepoRoot "logs"
             if (Test-Path $logsDir) { Remove-Item $logsDir -Recurse -Force }
 
-            Invoke-LinkLanguageCheckCore -ExcludePaths @()| Out-Null
+            Invoke-LinkLanguageCheckCore -ExcludePaths @() -OutputPath 'logs/link-lang-check-results.json' | Out-Null
 
             Test-Path $script:DefaultOutputPath | Should -BeTrue
 
