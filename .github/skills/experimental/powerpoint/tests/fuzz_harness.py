@@ -6,11 +6,13 @@ Runs as a pytest test when Atheris is not installed (CI default).
 Runs as an Atheris coverage-guided fuzz target when executed directly.
 """
 from __future__ import annotations
+
 import sys
 from unittest.mock import MagicMock
+
 sys.modules["cairosvg"] = MagicMock()
 
-from contextlib import suppress
+from contextlib import suppress  # noqa: E402
 
 try:
     import atheris
@@ -19,9 +21,9 @@ try:
 except ImportError:
     FUZZING = False
 
-from extract_content import _has_formatting_variation
-from pptx_colors import hex_brightness, resolve_color
-from validate_deck import max_severity
+from extract_content import _has_formatting_variation  # noqa: E402
+from pptx_colors import hex_brightness, resolve_color  # noqa: E402
+from validate_deck import max_severity  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Fuzz targets — pure functions exercised by both modes
@@ -94,7 +96,12 @@ class MockFont:
         self.bold = fdp.ConsumeBool()
         self.italic = fdp.ConsumeBool()
         self.underline = fdp.ConsumeBool()
-        self.size = fdp.ConsumeIntInRange(0, 1000000) if fdp.ConsumeBool() else None  # EMU
+        # EMU units
+        self.size = (
+            fdp.ConsumeIntInRange(0, 1000000)
+            if fdp.ConsumeBool()
+            else None
+        )
         if fdp.ConsumeBool():
             self.color = MockFontColor(fdp.ConsumeIntInRange(0, 0xFFFFFF))
         else:
@@ -107,7 +114,7 @@ class MockRun:
 
 def fuzz_has_formatting_variation(data):
     """Fuzz _has_formatting_variation with mock Run objects.
-    
+
     Covers all 6 formatting properties:
     - font.name, font.bold, font.italic
     - font.underline, font.color.rgb, font.size
@@ -222,22 +229,29 @@ class TestFuzzMaxSeverity:
 # ---------------------------------------------------------------------------
 # Deterministic test helper (NO atheris dependency)
 # ---------------------------------------------------------------------------
-def _make_test_run(name="Arial", bold=False, italic=False, underline=False, size=None, color_rgb=None):
+def _make_test_run(
+    name="Arial",
+    bold=False,
+    italic=False,
+    underline=False,
+    size=None,
+    color_rgb=None,
+):
     """Lightweight mock builder for deterministic pytest runs.
-    
-    Supports both dict-style access (for _has_formatting_variation) 
+
+    Supports both dict-style access (for _has_formatting_variation)
     and attribute-style access (for future object-based implementation).
     """
     class MockColor:
-        def __init__(self, rgb): 
+        def __init__(self, rgb):
             self.rgb = rgb
-        
+
         def __eq__(self, other):
             return isinstance(other, MockColor) and self.rgb == other.rgb
-        
+
         def __hash__(self):
             return hash(self.rgb)
-    
+
     class MockFont:
         def __init__(self):
             self.name = name
@@ -246,7 +260,7 @@ def _make_test_run(name="Arial", bold=False, italic=False, underline=False, size
             self.underline = underline
             self.size = size
             self.color = MockColor(color_rgb)
-        
+
         def __eq__(self, other):
             if not isinstance(other, MockFont):
                 return False
@@ -258,39 +272,23 @@ def _make_test_run(name="Arial", bold=False, italic=False, underline=False, size
                 self.size == other.size and
                 self.color == other.color
             )
-        
+
         def __hash__(self):
-            return hash((self.name, self.bold, self.italic, self.underline, self.size, self.color))
-    
+            return hash((
+                self.name, self.bold, self.italic,
+                self.underline, self.size, self.color,
+            ))
+
     class MockRun:
-        def __init__(self): 
+        def __init__(self):
             self.font = MockFont()
-        
-        # Dict-style access for _has_formatting_variation compatibility
-        def __contains__(self, key):
-            return key in ["font", "size", "color", "bold", "italic", "underline"]
-        
-        def get(self, key, default=None):
-            if key == "font":
-                return self.font
-            elif key == "size":
-                return self.font.size
-            elif key == "color":
-                return self.font.color
-            elif key == "bold":
-                return self.font.bold
-            elif key == "italic":
-                return self.font.italic
-            elif key == "underline":
-                return self.font.underline
-            return default
-        
+
         def __eq__(self, other):
             return isinstance(other, MockRun) and self.font == other.font
-        
+
         def __hash__(self):
             return hash(self.font)
-    
+
     return MockRun()
 
 
@@ -322,6 +320,74 @@ class TestFuzzHasFormattingVariation:
     def test_color_rgb_variation(self):
         runs = [_make_test_run(color_rgb=0xFF0000), _make_test_run(color_rgb=0x00FF00)]
         assert _has_formatting_variation(runs) is True
+
+    def test_bold_variation(self):
+        runs = [_make_test_run(bold=True), _make_test_run(bold=False)]
+        assert _has_formatting_variation(runs) is True
+
+    def test_italic_variation(self):
+        runs = [_make_test_run(italic=True), _make_test_run(italic=False)]
+        assert _has_formatting_variation(runs) is True
+
+
+# ---------------------------------------------------------------------------
+# Dict-style run helpers — exercise the dict branch of _has_formatting_variation
+# ---------------------------------------------------------------------------
+
+
+def _make_dict_run(font="Arial", bold=False, italic=False, underline=False,
+                   size=None, color_rgb=None):
+    """Create a plain dict matching the dict-style branch in get_props."""
+    class _Color:
+        def __init__(self, rgb):
+            self.rgb = rgb
+    return {
+        "font": font,
+        "bold": bold,
+        "italic": italic,
+        "underline": underline,
+        "size": size,
+        "color": _Color(color_rgb),
+    }
+
+
+class TestFuzzHasFormattingVariationDictStyle:
+    """Tests for _has_formatting_variation using dict-style runs."""
+
+    def test_single_dict_run(self):
+        assert _has_formatting_variation([_make_dict_run()]) is False
+
+    def test_identical_dict_runs(self):
+        runs = [_make_dict_run(), _make_dict_run()]
+        assert _has_formatting_variation(runs) is False
+
+    def test_different_fonts_dict(self):
+        runs = [_make_dict_run(font="Arial"), _make_dict_run(font="Calibri")]
+        assert _has_formatting_variation(runs) is True
+
+    def test_bold_variation_dict(self):
+        runs = [_make_dict_run(bold=True), _make_dict_run(bold=False)]
+        assert _has_formatting_variation(runs) is True
+
+    def test_italic_variation_dict(self):
+        runs = [_make_dict_run(italic=True), _make_dict_run(italic=False)]
+        assert _has_formatting_variation(runs) is True
+
+    def test_underline_variation_dict(self):
+        runs = [_make_dict_run(underline=True), _make_dict_run(underline=False)]
+        assert _has_formatting_variation(runs) is True
+
+    def test_size_variation_dict(self):
+        runs = [_make_dict_run(size=100_000), _make_dict_run(size=200_000)]
+        assert _has_formatting_variation(runs) is True
+
+    def test_color_rgb_variation_dict(self):
+        runs = [_make_dict_run(color_rgb=0xFF0000), _make_dict_run(color_rgb=0x00FF00)]
+        assert _has_formatting_variation(runs) is True
+
+    def test_empty_list_dict(self):
+        assert _has_formatting_variation([]) is False
+
 
 # ---------------------------------------------------------------------------
 # Atheris entry point — only runs when executed directly with Atheris installed

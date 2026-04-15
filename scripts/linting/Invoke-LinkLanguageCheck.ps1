@@ -42,8 +42,8 @@ function Invoke-LinkLanguageCheckCore {
 
     $repoRoot = git rev-parse --show-toplevel 2>$null
     if ($LASTEXITCODE -ne 0) {
-    Write-Error "Not in a git repository"
-    return 1
+        Write-Error "Not in a git repository"
+        return 1
     }
 
     

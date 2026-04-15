@@ -411,13 +411,14 @@ def _has_formatting_variation(runs: list) -> bool:
             )
 
         # Dict-style (run.get)
+        color_val = run.get("color")
         return (
             run.get("font"),
             run.get("bold"),
             run.get("italic"),
             run.get("underline"),
             run.get("size"),
-            getattr(run.get("color"), "rgb", None),
+            getattr(color_val, "rgb", color_val),
         )
 
     first_props = get_props(runs[0])
