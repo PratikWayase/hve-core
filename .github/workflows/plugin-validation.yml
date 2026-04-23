@@ -36,7 +36,9 @@ jobs:
       - name: Install PowerShell-Yaml
         shell: pwsh
         run: |
-          Install-Module -Name PowerShell-Yaml -RequiredVersion 0.4.7 -Force -Scope CurrentUser
+          if (-not (Get-Module -ListAvailable -Name PowerShell-Yaml | Where-Object { $_.Version -eq '0.4.7' })) {
+            Install-Module -Name PowerShell-Yaml -RequiredVersion 0.4.7 -Force -Scope CurrentUser
+          }
 
       - name: Validate collection metadata
         run: npm run lint:collections-metadata
