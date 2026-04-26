@@ -394,40 +394,23 @@ def extract_child_shape(
 
 
 def _has_formatting_variation(runs: list) -> bool:
-    if not runs or len(runs) <= 1:
+    """Check if multiple runs have different formatting properties."""
+    if len(runs) <= 1:
         return False
-
-    def get_props(run):
-        # Object-style (run.font)
-        if hasattr(run, "font"):
-            font = run.font
-            return (
-                getattr(font, "name", None),
-                getattr(font, "bold", None),
-                getattr(font, "italic", None),
-                getattr(font, "underline", None),
-                getattr(font, "size", None),
-                getattr(getattr(font, "color", None), "rgb", None),
-            )
-
-        # Dict-style (run.get)
-        color_val = run.get("color")
-        return (
-            run.get("font"),
-            run.get("bold"),
-            run.get("italic"),
-            run.get("underline"),
-            run.get("size"),
-            getattr(color_val, "rgb", color_val),
-        )
-
-    first_props = get_props(runs[0])
-
-    for run in runs[1:]:
-        if get_props(run) != first_props:
-            return True
-
-    return False
+    fonts = {r.get("font") for r in runs if "font" in r}
+    sizes = {r.get("size") for r in runs if "size" in r}
+    colors = {r.get("color") for r in runs if "color" in r}
+    bolds = {r.get("bold", False) for r in runs}
+    italics = {r.get("italic", False) for r in runs}
+    underlines = {r.get("underline", False) for r in runs}
+    return (
+        len(fonts) > 1
+        or len(sizes) > 1
+        or len(colors) > 1
+        or len(bolds) > 1
+        or len(italics) > 1
+        or len(underlines) > 1
+    )
 
 
 # Key-mapping for extraction: maps canonical keys to output YAML key names
