@@ -61,7 +61,7 @@ function script:Invoke-FileScan {
                 continue
             }
 
-            if ($line -match "\bpip3?\s+install\b" -and $line -notmatch "\buv\s+pip3?\s+install\b") {
+            if ($line -match "\bpip3?\s+install\b" -and $line -notmatch "\buv\s+pip3?\s+install\b" -and $line -notmatch "%pip\s+install") {
                 if ($strippedLine -notmatch "^(name:|- name:)") {
                     $script:Violations += "$FilePath`:$lineNumber`: $strippedLine"
                 }

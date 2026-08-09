@@ -107,4 +107,13 @@ Describe "Invoke-PipInstallLint.ps1" {
         $result | Should -Be $true
         $script:Violations.Count | Should -Be 0
     }
+
+    It "Should ignore %pip install (Jupyter magic command)" {
+        $testFile = Join-Path $testDir "jupyter_allowed.py"
+        Set-Content -Path $testFile -Value "%pip install pandas numpy"
+        
+        $result = script:Invoke-Lint -TargetDir $testDir
+        $result | Should -Be $true
+        $script:Violations.Count | Should -Be 0
+    }
 }

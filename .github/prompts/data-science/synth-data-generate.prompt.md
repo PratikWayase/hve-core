@@ -100,7 +100,7 @@ All files for the synthetic data project should be organized in a dedicated fold
 Create a well-structured notebook with the following cells:
 
 1. Title Cell (Markdown): Clear title with the subject
-2. Package Installation Cell (Python): Install required packages using `%pip install pandas numpy matplotlib seaborn scipy` <!-- pip-install-ok -->
+2. Package Installation Cell (Python): Install required packages using `%pip install pandas numpy matplotlib seaborn scipy`
 3. Library Import Cell (Python): Import all required libraries
 4. Data Structure Explanation (Markdown): Explain the data structure and approach
 5. Backup Creation (Python): If updating existing data source, create backup in notebook directory with `.bak` extension
@@ -239,7 +239,7 @@ start_time = datetime.combine(day, datetime.min.time()) + timedelta(
 
 ```python
 # Cell 1: Package Installation (Python)
-%pip install pandas numpy matplotlib seaborn scipy <!-- pip-install-ok -->
+%pip install pandas numpy matplotlib seaborn scipy
 
 # Cell 2: Library Imports (Python)
 import pandas as pd
