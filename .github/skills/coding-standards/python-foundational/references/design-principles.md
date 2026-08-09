@@ -29,7 +29,6 @@ def create_user(data: dict) -> User:
         raise ValueError("Invalid name")
     return User(**data)
 
-
 def update_user(user: User, data: dict) -> User:
     if not data.get("email") or "@" not in data["email"]:
         raise ValueError("Invalid email")
@@ -49,11 +48,9 @@ def _validate_user_fields(data: dict) -> None:
     if not data.get("name") or len(data["name"]) < 2:
         raise ValueError("Invalid name")
 
-
 def create_user(data: dict) -> User:
     _validate_user_fields(data)
     return User(**data)
-
 
 def update_user(user: User, data: dict) -> User:
     _validate_user_fields(data)
@@ -74,7 +71,6 @@ Introduce abstractions only when multiple implementations actually exist. Avoid 
 class NotificationStrategy(Protocol):
     def send(self, message: str, recipient: str) -> None: ...
 
-
 class EmailNotifier:
     def __init__(self, strategy: NotificationStrategy) -> None:
         self.strategy = strategy
@@ -82,11 +78,9 @@ class EmailNotifier:
     def notify(self, message: str, recipient: str) -> None:
         self.strategy.send(message, recipient)
 
-
 class SmtpStrategy:
     def send(self, message: str, recipient: str) -> None:
         smtp_client.send_email(recipient, message)
-
 
 # Usage
 notifier = EmailNotifier(SmtpStrategy())
