@@ -23,10 +23,21 @@ function script:Test-ExcludedPath {
     $normalizedPath = $Path.Replace("\", "/").ToLowerInvariant()
 
     foreach ($dir in $script:ExcludeDirs) {
-        if ($normalizedPath -match "(^|/)$([regex]::Escape($dir))(/|$)") { return $true }
+        if ($dir -eq "evals") {
+            if ($normalizedPath -match "(^|/)evals(/|$)" -and $normalizedPath -notmatch "(^|/)scripts/evals(/|$)") { 
+                return $true 
+            }
+        } else {
+            if ($normalizedPath -match "(^|/)$([regex]::Escape($dir))(/|$)") { 
+                return $true 
+            }
+        }
     }
+    
     foreach ($file in $script:ExcludeFiles) {
-        if ($normalizedPath -match "(^|/)$([regex]::Escape($file))(/|$)") { return $true }
+        if ($normalizedPath -match "(^|/)$([regex]::Escape($file))(/|$)") { 
+            return $true 
+        }
     }
     return $false
 }
@@ -41,7 +52,8 @@ function script:Invoke-FileScan {
     if (script:Test-ExcludedPath -Path $FilePath) { return }
 
     $ext = [System.IO.Path]::GetExtension($FilePath).ToLowerInvariant()
-    if ($ext -notin @(".py", ".ps1", ".yml", ".yaml", ".md", "")) { return }
+
+    if ($ext -notin @(".py", ".ps1", ".yml", ".yaml", ".md", ".sh", "")) { return }
 
     try {
         $lines = Get-Content -Path $FilePath -Raw -ErrorAction SilentlyContinue
@@ -61,7 +73,8 @@ function script:Invoke-FileScan {
                 continue
             }
 
-            if ($line -match "\bpip3?\s+install\b" -and $line -notmatch "\buv\s+pip3?\s+install\b" -and $line -notmatch "%pip\s+install") {
+            $cleanedLine = $line -replace "\buv\s+pip3?\s+install\b", "" -replace "%pip\s+install", ""
+            if ($cleanedLine -match "\bpip3?\s+install\b") {
                 if ($strippedLine -notmatch "^(name:|- name:)") {
                     $script:Violations += "$FilePath`:$lineNumber`: $strippedLine"
                 }
@@ -80,17 +93,28 @@ function script:Invoke-Lint {
     $script:Violations = @()
     $script:ScannedFiles = @{}
 
+    $extensions = @("*.py", "*.ps1", "*.yml", "*.yaml", "*.md", "*.sh")
+
     if ($TargetDir -eq ".") {
-        foreach ($dir in @(".github/workflows", "scripts")) {
-            if (Test-Path $dir) {
-                Get-ChildItem -Path $dir -Recurse -File -ErrorAction SilentlyContinue | ForEach-Object { script:Invoke-FileScan -FilePath $_.FullName }
+        $rootDir = (Resolve-Path ".").Path
+        
+        $trackedFiles = git -C $rootDir ls-files 2>$null
+        
+        if ($LASTEXITCODE -eq 0 -and $trackedFiles) {
+            foreach ($file in $trackedFiles) {
+                $ext = [System.IO.Path]::GetExtension($file)
+                if ($ext -in @(".py", ".ps1", ".yml", ".yaml", ".md", ".sh")) {
+                    $fullPath = Join-Path $rootDir $file
+                    script:Invoke-FileScan -FilePath $fullPath
+                }
+            }
+        } else {
+            Get-ChildItem -Path $rootDir -Recurse -Include $extensions -File -Force -ErrorAction SilentlyContinue | ForEach-Object {
+                script:Invoke-FileScan -FilePath $_.FullName
             }
         }
-        Get-ChildItem -Path "." -Recurse -Include *.py, *.ps1, *.yml, *.yaml, *.md -File -ErrorAction SilentlyContinue | ForEach-Object {
-            script:Invoke-FileScan -FilePath $_.FullName
-        }
     } else {
-        Get-ChildItem -Path $TargetDir -Recurse -Include *.py, *.ps1, *.yml, *.yaml, *.md -File -ErrorAction SilentlyContinue | ForEach-Object {
+        Get-ChildItem -Path $TargetDir -Recurse -Include $extensions -File -Force -ErrorAction SilentlyContinue | ForEach-Object {
             script:Invoke-FileScan -FilePath $_.FullName
         }
     }
