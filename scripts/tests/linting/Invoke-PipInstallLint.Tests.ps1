@@ -22,14 +22,35 @@ Describe "Invoke-PipInstallLint.ps1" -Tag "Unit" {
         $script:Violations.Count | Should -Be 0
     }
 
-    It "Should detect bare pip install violation" {
+    It "Should detect bare pip install violation and output path/line" {
         $testFile = Join-Path $script:testDir "violation.yml"
         Set-Content -Path $testFile -Value "run: pip install malicious-package"
-
-        # Invoke-Lint calls Write-Error on violations, which throws under $ErrorActionPreference=Stop
-        { script:Invoke-Lint -TargetDir $script:testDir } | Should -Throw -ExpectedMessage "*bare 'pip install'*"
+        
+        $output = script:Invoke-Lint -TargetDir $script:testDir *>&1 | Out-String
+        
+        $output | Should -Not -BeNullOrEmpty
+        $output | Should -Match "violation.yml"
+        $output | Should -Match ":1:"
+        
         $script:Violations.Count | Should -BeGreaterThan 0
         $script:Violations[0] | Should -Match "malicious-package"
+    }
+
+    It "Should detect bare pip install split across backslash continuation lines" {
+        $testFile = Join-Path $script:testDir "continuation.sh"
+        
+        $content = @"
+pip \
+install malicious-package
+"@
+        Set-Content -Path $testFile -Value $content
+        
+        $output = script:Invoke-Lint -TargetDir $script:testDir *>&1 | Out-String
+        
+        $output | Should -Match "continuation\.sh"
+        $output | Should -Match ":1:"
+        
+        $script:Violations.Count | Should -BeGreaterThan 0
     }
 
     It "Should respect exclusion logic (evals directory)" {
@@ -73,10 +94,10 @@ Describe "Invoke-PipInstallLint.ps1" -Tag "Unit" {
     It "Should scan correctly when TestDirectory uses default value" {
         $testFile = Join-Path $script:testDir "default_param_test.py"
         Set-Content -Path $testFile -Value "run: pip install default-violation"
-
         Push-Location $script:testDir
         try {
-            { script:Invoke-Lint } | Should -Throw -ExpectedMessage "*bare 'pip install'*"
+            $result = script:Invoke-Lint
+            $result | Should -Be $false
             $script:Violations.Count | Should -BeGreaterThan 0
             $script:Violations[0] | Should -Match "default-violation"
         } finally {
@@ -87,8 +108,8 @@ Describe "Invoke-PipInstallLint.ps1" -Tag "Unit" {
     It "Should NOT exclude files with similar names (regex escape regression)" {
         $testFile = Join-Path $script:testDir "Invoke-PipInstallLintXps1.py"
         Set-Content -Path $testFile -Value "run: pip install wildcard-false-negative"
-
-        { script:Invoke-Lint -TargetDir $script:testDir } | Should -Throw -ExpectedMessage "*bare 'pip install'*"
+        $result = script:Invoke-Lint -TargetDir $script:testDir
+        $result | Should -Be $false
         $script:Violations.Count | Should -BeGreaterThan 0
         $script:Violations[0] | Should -Match "wildcard-false-negative"
     }
@@ -114,16 +135,16 @@ Describe "Invoke-PipInstallLint.ps1" -Tag "Unit" {
     It "Detects bare pip install on a line that also contains uv pip install" {
         $testFile = Join-Path $script:testDir "mixed.sh"
         Set-Content -Path $testFile -Value "uv pip install allowed && pip install bypassed"
-
-        { script:Invoke-Lint -TargetDir $script:testDir } | Should -Throw -ExpectedMessage "*bare 'pip install'*"
+        $result = script:Invoke-Lint -TargetDir $script:testDir
+        $result | Should -Be $false
         $script:Violations.Count | Should -BeGreaterThan 0
     }
 
     It "Detects bare pip install in .sh files" {
         $testFile = Join-Path $script:testDir "script.sh"
         Set-Content -Path $testFile -Value "pip install requests"
-
-        { script:Invoke-Lint -TargetDir $script:testDir } | Should -Throw -ExpectedMessage "*bare 'pip install'*"
+        $result = script:Invoke-Lint -TargetDir $script:testDir
+        $result | Should -Be $false
         $script:Violations.Count | Should -BeGreaterThan 0
     }
 
@@ -132,8 +153,8 @@ Describe "Invoke-PipInstallLint.ps1" -Tag "Unit" {
         New-Item -ItemType Directory -Path $ghDir -Force | Out-Null
         $testFile = Join-Path $ghDir "setup.md"
         Set-Content -Path $testFile -Value "pip install numpy"
-
-        { script:Invoke-Lint -TargetDir $script:testDir } | Should -Throw -ExpectedMessage "*bare 'pip install'*"
+        $result = script:Invoke-Lint -TargetDir $script:testDir
+        $result | Should -Be $false
         $script:Violations.Count | Should -BeGreaterThan 0
     }
 }

@@ -166,7 +166,7 @@ never writes `package-lock.json`, and it still verifies every download against
 the committed `sha512` integrity value.
 
 Restrict proxied installs to restore commands. `npm ci`, `uv sync --frozen`, and
-`pip install -r` read committed lockfiles and verify committed hashes. Commands
+`pip install -r` read committed lockfiles and verify committed hashes. Commands <!-- pip-install-ok -->
 that resolve dependencies, such as `npm install`, `npm update`, `npm audit fix`,
 `uv lock`, and `uv add`, write the proxy's own URLs into the lockfile and can
 downgrade npm integrity from `sha512` to `sha1`. Run

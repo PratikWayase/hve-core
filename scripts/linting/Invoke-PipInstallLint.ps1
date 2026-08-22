@@ -59,27 +59,26 @@ function script:Invoke-FileScan {
         $lines = Get-Content -Path $FilePath -Raw -ErrorAction SilentlyContinue
         if (-not $lines) { return }
         
-        $lineNumber = 1
-        foreach ($line in $lines -split "`r?`n") {
-            $strippedLine = $line.Trim()
-            
-            if ([string]::IsNullOrWhiteSpace($strippedLine)) { 
-                $lineNumber++
-                continue 
+        $physicalLines = $lines -split "`r?`n"
+        for ($lineIndex = 0; $lineIndex -lt $physicalLines.Count; $lineIndex++) {
+            $lineNumber = $lineIndex + 1
+            $line = $physicalLines[$lineIndex]
+            while ($line -match "\\\s*$" -and $lineIndex + 1 -lt $physicalLines.Count) {
+                $line = ($line -replace "\\\s*$", " ") + $physicalLines[++$lineIndex].TrimStart()
             }
-
-            if ($line -match "#\s*pip-install-ok\b" -or $line -match "<!--\s*pip-install-ok\s*-->") {
-                $lineNumber++
+            $strippedLine = $line.Trim()
+            if ([string]::IsNullOrWhiteSpace($strippedLine)) {
                 continue
             }
-
+            if ($line -match "#\s*pip-install-ok\b" -or $line -match "<!--\s*pip-install-ok\s*-->") {
+                continue
+            }
             $cleanedLine = $line -replace "\buv\s+pip3?\s+install\b", "" -replace "%pip\s+install", ""
             if ($cleanedLine -match "\bpip3?\s+install\b") {
                 if ($strippedLine -notmatch "^(name:|- name:)") {
                     $script:Violations += "$FilePath`:$lineNumber`: $strippedLine"
                 }
             }
-            $lineNumber++
         }
     }
     catch {
@@ -120,7 +119,7 @@ function script:Invoke-Lint {
     }
 
     if ($script:Violations.Count -gt 0) {
-        Write-Error "ERROR: Found bare 'pip install' calls. Use 'uv pip install' instead."
+        Write-Error -ErrorAction Continue "ERROR: Found bare 'pip install' calls. Use 'uv pip install' instead."
         Write-Host "The repo follows a uv-first Python convention.`n" -ForegroundColor Yellow
         foreach ($v in ($script:Violations | Sort-Object -Unique)) {
             Write-Host "  - $v" -ForegroundColor Red
