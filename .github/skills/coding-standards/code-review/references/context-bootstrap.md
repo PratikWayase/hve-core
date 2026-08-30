@@ -1,7 +1,7 @@
 ---
 title: Code Review Context Bootstrap
 description: Tier 0 workflow for establishing the change surface, drafting a change brief, and scoping review hotspots.
-ms.date: 2026-07-31
+ms.date: 2026-08-29
 ---
 
 ## Objective
@@ -15,12 +15,13 @@ Start with the orientation floor from [Walkthrough Protocol](walkthrough-protoco
 ## Tier 0 procedure
 
 1. Compute the diff once from the selected base branch and capture the changed-file surface.
-2. Draft a **Change-Risk Profile** alongside the change brief using the deterministic signals defined in [Change-Risk Model](change-risk-model.md). Evaluate Likelihood (size, diffusion, entropy), Severity (path criticality), Detectability (test presence), and Recoverability (rollback markers) using `git log` and `git diff` signals.
+2. Gather the six categories from the [Change-Risk Evidence Checklist](change-risk-model.md): change scope, path criticality, history, test presence, coverage, and rollback. Record each category as `observed`, `unavailable`, or `qualitative` with concise supporting evidence.
 3. Summarize the change in a concise change brief that explains what changed and why it matters.
-4. Auto-detect hotspot candidates and specialist concern signals from the diff and file paths in the same pass. Tag the specialist concern classes for security, supply-chain, RAI or AI, accessibility, sustainability or efficiency, and privacy or PII using the signal-to-concern mapping in [Cross-Skill Forks](cross-skill-forks.md). Rank hotspot candidates using the risk profile's evidence (e.g., trailing churn, missed co-changes).
-5. Present the emerging brief, the Change-Risk Profile evidence, and hotspot candidates to the human for confirmation and correction.
-6. Invite the human to add or remove hotspots, adjust the risk profile interpretation, and mark out-of-scope areas before review lanes dispatch.
-7. Persist the confirmed brief, the risk profile, the scoped hotspot list, the tagged specialist concerns, and out-of-scope areas as the review context for later aggregation.
+4. Auto-detect hotspot candidates and specialist concern signals from the diff and file paths in the same pass. Tag the specialist concern classes for security, supply-chain, RAI or AI, accessibility, sustainability or efficiency, and privacy or PII using the signal-to-concern mapping in [Cross-Skill Forks](cross-skill-forks.md). Use available history evidence to inform hotspot ordering without treating co-change or churn as proof of a defect.
+5. Derive an advisory depth recommendation from the checklist. Use `standard` when the evidence is incomplete or inconclusive.
+6. Present the emerging brief, checklist evidence, recommendation, and hotspot candidates to the human for confirmation and correction.
+7. Invite the human to correct evidence, add or remove hotspots, select the review depth, explain any difference from the recommendation, and mark out-of-scope areas before review lanes dispatch.
+8. Persist the brief, `changeRiskEvidence`, `recommendedDepth`, selected `depthTier`, `depthRationale`, scoped hotspots, tagged specialist concerns, and out-of-scope areas as the review context for later aggregation. In interactive mode, identify values the human confirmed or corrected. In workflow mode, identify generated or defaulted values as automation-derived.
 
 ## Change brief expectations
 
@@ -31,16 +32,17 @@ The change brief should be short and specific. It should explain:
 * the likely risk areas,
 * and any notable test or rollout considerations.
 
-## Change-Risk Profile expectations
+## Change-risk evidence expectations
 
-The Change-Risk Profile is an advisory, evidence-bearing vector, never a single opaque score. It must cite specific git-computable signals (e.g., "High diffusion across 4 subsystems", "Touches trailing 90-day hotspots", "No test files present in diff"). For repositories with shallow git history, explicitly state the confidence level and rely on baseline signals like Size and Diffusion. The profile informs the human-scoping step and subsequent depth-tier selection but never acts as a hard gate.
+The checklist is advisory evidence, not an overall score, categorical rating, or confidence assessment. Cite concrete observations when available, mark missing history or coverage `unavailable`, and identify interpretation-dependent evidence as `qualitative`. Treat agent-generated qualitative evidence as proposed until a human confirms or corrects it. Missing evidence must remain visible and defaults the recommendation to standard unless other evidence supports comprehensive review.
 
 ## Human-scoping protocol
 
 Do not let the agent decide the entire scope alone. The human should be able to:
 
 * confirm or edit the change brief,
-* review and adjust the Change-Risk Profile evidence,
+* review and correct the change-risk evidence and recommendation,
+* select the depth tier and explain any difference from the recommendation,
 * add or remove hotspot candidates,
 * and explicitly mark areas that should not be reviewed in this run.
 

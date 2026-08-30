@@ -1,7 +1,7 @@
 ---
 title: Code Review Severity Taxonomy
 description: Severity levels, verdict normalization, and risk classification guidance for code review findings.
-ms.date: 2026-07-31
+ms.date: 2026-08-29
 ---
 
 ## Severity levels
@@ -29,7 +29,7 @@ Assign file-level risk using the component context:
 * `Medium` for core business logic, API boundaries, and shared utilities with broad impact.
 * `Low` for configuration, documentation, cosmetic changes, and isolated helper code.
 
-> **Note:** The path-based classification above serves as the **Severity** factor input for the broader quantitative **Change-Risk Model** (see [Change-Risk Model](change-risk-model.md)). Path criticality is one of four factors (alongside Likelihood, Detectability, and Recoverability) used to build the evidence-based Change-Risk Profile. Path criticality is one signal within a broader risk profile and does not determine overall change risk on its own.
+> **Note:** The path-based classification above supplies the `path-criticality` item in the [Change-Risk Evidence Checklist](change-risk-model.md). It informs an advisory depth recommendation but does not change finding severity, verdict normalization, or determine review depth on its own.
 
 ## Severity count convention
 

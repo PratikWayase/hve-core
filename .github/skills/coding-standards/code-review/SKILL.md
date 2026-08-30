@@ -6,7 +6,7 @@ user-invocable: true
 metadata:
   authors: "microsoft/hve-core"
   spec_version: "1.0"
-  last_updated: "2026-07-31"
+  last_updated: "2026-08-29"
 ---
 
 # Code Review — Skill Entry

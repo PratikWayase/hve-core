@@ -1,64 +1,72 @@
 ---
-title: Change-Risk Model
-description: Signal taxonomy and scoring rubric for deterministic, evidence-based change-risk profiling.
-ms.date: 2026-07-29
+title: Change-Risk Evidence Checklist
+description: Advisory evidence checklist for human-confirmed code-review depth selection.
+ms.date: 2026-08-29
 ---
 
-## The Change-Risk Profile
+## Outcome
 
-The model produces an advisory **Change-Risk Profile**: a vector of named, evidenced signals, never a single opaque score. To build the profile, evaluate each signal below as High, Medium, or Low based on git history, then combine them into a named-signal profile citing the specific evidence (e.g., "High Diffusion: 12 files across 4 subsystems"). The profile informs the human-scoping step, drives depth-tier selection, and ranks hotspot candidates using deterministic, git-computable signals.
+Use six evidence categories to make review-depth recommendations inspectable. The checklist informs a human choice; it does not calculate defect probability, produce an overall risk rating, or select a depth automatically.
 
+## Evidence states
 
-## Risk factors
+Record one evidence state and a concise evidence statement for every category. The state describes the evidence basis, not confidence in a claim:
 
-Evaluate every change across four distinct factors. All signals are computable deterministically using `git log` and `git diff`.
+* `observed`: Directly supported by the diff, repository, test results, coverage report, or version history
+* `unavailable`: The required source is absent, inaccessible, or too shallow to support a claim
+* `qualitative`: Interpretation-dependent evidence from available context rather than a reproducible measurement
 
-### Likelihood
-How likely the change introduces a defect. Measure using:
+Treat agent-generated qualitative evidence as proposed until a human confirms or corrects it. In a non-interactive workflow, keep generated evidence labeled as automation-derived. Do not infer evidence that is unavailable. Missing history or coverage does not increase risk by itself; it makes the recommendation incomplete.
 
-* `Size` — lines added or modified.
-* `Diffusion` — number of files, directories, and subsystems touched.
-* `Entropy` — scatter of the change across the codebase.
-* `Hotspot Overlap` — intersection with trailing 90-day high-churn or high-complexity files.
-* `Missed Co-change` — touching one file of a historically coupled cluster while missing its siblings.
+## Checklist categories
 
-### Severity
-The blast radius if the change fails. Measure using:
+### Change scope
 
-* `Path Criticality` — classification of touched paths per [Severity Taxonomy](severity-taxonomy.md).
-* *Note: Dependency fan-in and call-graph analysis are deferred to v2 to maintain language-agnostic determinism.*
+Describe the size and diffusion of the change, including affected files, directories, subsystems, and whether the work is mechanical or behavior-changing. Use exact counts when the diff supports them. Do not use universal size thresholds.
 
-### Detectability
-Whether a defect would be caught before impact. Measure using:
+### Path criticality
 
-* `Test Presence` — test files included in the diff.
-* `Coverage` — touched-file test coverage (where CI data is available).
+Identify security-sensitive, persistence, financial, parsing, shared-boundary, or other critical paths using the component context from [Severity Taxonomy](severity-taxonomy.md). Treat criticality as one input, not an overall change-risk label.
 
-### Recoverability
-How quickly the change can be backed out. Measure using:
+### History
 
-* `Reversibility Markers` — presence of feature flags.
-* `Hard-to-Rollback` — schema migrations, database changes, or irreversible config changes versus standard code.
+Record available churn, hotspot, and co-change cues. State `unavailable` when repository history is shallow or inaccessible. Historical associations guide attention; they do not prove that a changed file is defective or that an unchanged sibling is missing.
 
-## Agentic-era modifiers
+### Test presence
 
-Agent-authored code requires specific adjustments to classic risk models. Apply the following modifiers to the profile:
+Record whether relevant tests exist or changed and what behavior they exercise. Test presence is distinct from coverage and does not establish test effectiveness by itself.
 
-* `Provenance-Aware Weighting` — detect agent authorship (e.g., `Co-authored-by:` trailers). Neutralize traditional "author experience" signals, as agents have perfect recall of immediate context but zero memory of historical design intent.
-* `Comprehension Ratio` — evaluate the semantic weight of the delta. A 4,000-line mechanical rename scores lower on Likelihood than 40 lines changing core retry semantics.
-* `Amplification Ratio` — compare the RPI plan artefact delta to the actual code delta. Flag high-risk mismatches where a small plan produces an enormous code delta, or a large plan produces a suspiciously small diff.
+### Coverage
 
-## Cold starts and confidence
+Record available coverage for the changed behavior or state `unavailable`. Coverage is distinct from test presence and does not establish defect detection by itself.
 
-The model relies on git history. For repositories with shallow history, signal confidence degrades.
+### Rollback
 
-* If trailing 90-day history is insufficient to calculate Hotspot Overlap or Missed Co-change, explicitly state: *"Confidence: Low (shallow history). Relying on Size and Diffusion signals."*
-* Widen confidence intervals and default to standard depth tiers unless Size or Diffusion signals are extreme. Never artificially inflate a risk rating due to missing data.
+Describe observed rollback evidence, such as feature flags or a documented reversal path, and hard-to-reverse behavior, such as schema migrations, persisted-data changes, or irreversible configuration.
 
-## Gaming and Goodhart's Law
+## Depth recommendation
 
-Agents aware of the scoring model may attempt to game it (e.g., pathologically splitting changes to lower Diffusion scores).
+Recommend a verification depth from the checklist evidence:
 
-* The profile is advisory input to a human-confirmed scoping step, not a gate.
-* Batch-splitting that genuinely reduces per-change blast radius is acceptable engineering behavior.
-* The human-scoping protocol evaluates the *intent* of the change, serving as the ultimate safeguard against metric manipulation.
+* Recommend `basic` only when the available evidence consistently supports a narrow, reversible, well-tested change with no critical-path concern.
+* Recommend `standard` for most changes and whenever evidence is incomplete, unavailable in a material category, or inconclusive.
+* Recommend `comprehensive` when observed or qualitative evidence identifies critical paths, broad behavioral spread, weak detection for important logic, hard rollback, or material ambiguity.
+
+Explain the recommendation without converting the categories into a numeric score or a Low, Medium, or High profile. Present the checklist and recommendation before asking the human to select `basic`, `standard`, or `comprehensive`. Persist the human-selected depth and a rationale that explains any difference from the recommendation.
+
+## Interpretation safeguards
+
+* Keep the checklist advisory and allow the human to correct every evidence statement.
+* Evaluate the intent and combined change surface so mechanical splitting does not hide coupled work.
+* Preserve useful batching that genuinely reduces blast radius.
+* Do not add authorship or agent-capability modifiers without operational definitions and repository-local validation.
+
+## Evidence basis
+
+The checklist paraphrases empirical findings as attention cues rather than portable prediction rules:
+
+* [Use of Relative Code Churn Measures to Predict System Defect Density](https://doi.org/10.1109/ICSE.2005.1553571)
+* [Predicting Faults Using the Complexity of Code Changes](https://doi.org/10.1109/ICSE.2009.5070510)
+* [A Large-Scale Empirical Study of Just-In-Time Quality Assurance](https://doi.org/10.1109/TSE.2012.70)
+* [Mining Version Histories to Guide Software Changes](https://doi.org/10.1109/TSE.2005.72)
+* [Coverage Is Not Strongly Correlated with Test Suite Effectiveness](https://doi.org/10.1145/2568225.2568271)
