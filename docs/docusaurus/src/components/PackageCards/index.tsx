@@ -26,7 +26,7 @@ export default function PackageCard({
             {title}
           </Link>
         </h3>
-        <MaturityBadge maturity={maturity} />
+        <MaturityBadge maturity={maturity} href={href} />
       </div>
       <p className={styles.packageDescription}>{description}</p>
       <p className={styles.artifactCount}>
