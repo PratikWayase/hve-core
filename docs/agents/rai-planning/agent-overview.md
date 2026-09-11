@@ -136,9 +136,10 @@ When returning to an existing RAI assessment, the agent follows a five-step resu
 2. If `disclaimerShownAt` is `null`, display the Startup Announcement verbatim and record the timestamp
 3. Display current phase progress and checklist status
 4. Read persisted preflight state and perform validation:
-* Revalidate every template by kind before dereferencing it. For documents, normalize the stored workspace-relative path, resolve it against the workspace root, and reject it when the result escapes the workspace. For Mural, accept only the stored opaque ID and keep authentication in the tool boundary.
-* When templates is non-empty, verify the required assessmentContentFile; if it is missing or unusable, pause phase work and recreate it from every validated template, the authoritative rai-plan.md, and each template's local stableIdMap. Require every local map to be non-empty, one-to-one, and consistent with reconstructed content. If a local map is absent, empty, non-bijective, or conflicting, obtain confirmation before issuing replacement IDs.
-* Stop and ask the user if validation or recreation fails. When templates is empty, require a null content file. Summarize what was completed and what remains.
+Revalidate every template by kind before dereferencing it. For documents, normalize the stored workspace-relative path, resolve it against the workspace root, and reject it when the result escapes the workspace. For Mural, accept only the stored opaque ID and keep authentication in the tool boundary.
+When templates is non-empty, verify the required assessmentContentFile; if it is missing or unusable, pause phase work and recreate it from every validated template, the authoritative rai-plan.md, and each template's local stableIdMap.
+Require every local map to be non-empty, one-to-one, and consistent with reconstructed content. If a local map is absent, empty, not one-to-one, or conflicting, obtain confirmation before issuing replacement IDs.
+Stop and ask the user if validation or recreation fails. When templates is empty, require a null content file. Summarize what was completed and what remains.
 5. Continue from the last incomplete action
 
 ### Post-Summarization Recovery
