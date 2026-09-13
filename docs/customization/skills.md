@@ -31,7 +31,7 @@ Skills are referenced using the `copilot-skill:` URI scheme. When Copilot encoun
 
 Skills live under `.github/skills/{package-id}/{skill-name}/`:
 
-```text
+<pre aria-hidden="true">
 .github/skills/
 └── contoso/
     └── api-review/
@@ -41,7 +41,18 @@ Skills live under `.github/skills/{package-id}/{skill-name}/`:
         │   └── validate-openapi.sh
         └── references/
             └── error-codes.md
-```
+</pre>
+
+<!-- A semantic nested list is provided for assistive technology. -->
+- `.github/skills/`
+  - `contoso/`
+    - `api-review/`
+      - `SKILL.md`
+      - `api-standards.md`
+      - `scripts/`
+        - `validate-openapi.sh`
+      - `references/`
+        - `error-codes.md`
 
 Each skill folder must contain a `SKILL.md` file. Supporting files are optional and organized by convention:
 

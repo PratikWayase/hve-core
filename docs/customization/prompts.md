@@ -20,14 +20,23 @@ Prompt files live under `.github/prompts/`. They are commonly organized into
 package-scoped subdirectories such as `.github/prompts/hve-core/` or
 `.github/prompts/security/`, though the repository also contains top-level prompt files:
 
-```text
+<pre aria-hidden="true">
 .github/prompts/
 ├── contoso/
 │   ├── sprint-summary.prompt.md
 │   └── release-notes.prompt.md
 └── shared/
     └── git-commit-message.prompt.md
-```
+</pre>
+
+<!-- A semantic nested list is provided for assistive technology. -->
+
+- `.github/prompts/`
+  - `contoso/`
+    - `sprint-summary.prompt.md`
+    - `release-notes.prompt.md`
+  - `shared/`
+    - `git-commit-message.prompt.md`
 
 You invoke prompts through the `/` command picker in Copilot Chat. Each prompt appears by its filename, making descriptive naming essential.
 
