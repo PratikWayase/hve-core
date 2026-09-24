@@ -76,6 +76,7 @@ describe('PackageCard', () => {
       const tooltip = screen.getByRole('tooltip');
       expect(tooltip).toBeInTheDocument();
       expect(tooltip).toHaveTextContent(glossary);
+      expect(badgeLink).toHaveAccessibleDescription(glossary);
     },
   );
 

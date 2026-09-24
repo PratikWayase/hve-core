@@ -1,25 +1,24 @@
-/* BADGE WRAPPER */
 .badgeWrapper {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
   border-radius: 2px;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  line-height: 16px;
+  letter-spacing: 0.03125rem;
+  line-height: 1rem;
   flex-shrink: 0;
   position: relative;
-  z-index: 20; 
+  z-index: 20;
   pointer-events: none;
 }
 
 .badgeLink {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 0.25rem;
   color: inherit;
   text-decoration: none;
   pointer-events: auto;
@@ -27,40 +26,29 @@
   border-radius: 2px;
 }
 
-/* A11y: Clear visual focus state for keyboard navigation */
 .badgeLink:focus-visible {
   outline: 2px solid var(--ifm-color-primary);
   outline-offset: 2px;
 }
 
-span.badgeLink {
-  cursor: help;
-}
-
-/*  TOOLTIP (DESKTOP DEFAULT) */
 .tooltip {
   position: absolute;
-  top: 100%; 
-  left: 50%; 
-  transform: translateX(-50%) translateY(8px); 
-  
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(0.5rem);
   background: var(--ifm-color-emphasis-800, #333);
   color: var(--ifm-color-emphasis-100, #fff);
-  padding: 8px 12px;
+  padding: 0.5rem 0.75rem;
   border-radius: 4px;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 500;
   text-transform: none;
-  white-space: normal; 
-  
-  /* Allows text to shrink and wrap naturally */
-  width: fit-content; 
-  max-width: 240px; 
-  
+  white-space: normal;
+  width: max-content;
+  max-width: min(15rem, calc(100vw - 2.5rem));
   z-index: 10;
-  pointer-events: none;
+  pointer-events: auto;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
@@ -70,48 +58,62 @@ span.badgeLink {
 .badgeWrapper:focus-within .tooltip {
   opacity: 1;
   visibility: visible;
-  transform: translateX(-50%) translateY(4px); 
+  transform: translateX(-50%) translateY(0.25rem);
 }
 
-/* Arrow points UP towards the badge */
+.tooltipDismissed,
+.badgeWrapper:hover .tooltipDismissed,
+.badgeWrapper:focus-within .tooltipDismissed {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-50%) translateY(0.5rem);
+}
+
 .tooltip::after {
   content: '';
   position: absolute;
-  bottom: 100%; 
+  bottom: 100%;
   left: 50%;
   transform: translateX(-50%);
   border: 6px solid transparent;
   border-bottom-color: var(--ifm-color-emphasis-800, #333);
 }
 
-/* MOBILE ADJUSTMENT */
-
 @media (max-width: 768px) {
   .tooltip {
-    left: 0;
-    transform: translateY(8px);
-    width: fit-content;
-    max-width: calc(100vw - 40px);
+    right: 0;
+    left: auto;
+    transform: translateY(0.5rem);
   }
-  
+
   .badgeWrapper:hover .tooltip,
   .badgeWrapper:focus-within .tooltip {
-    transform: translateY(4px); 
+    transform: translateY(0.25rem);
   }
-  
-  /* Move the arrow to the left side so it still points at the badge */
+
+  .tooltipDismissed,
+  .badgeWrapper:hover .tooltipDismissed,
+  .badgeWrapper:focus-within .tooltipDismissed {
+    transform: translateY(0.5rem);
+  }
+
   .tooltip::after {
-    left: 16px; 
+    right: 1rem;
+    left: auto;
     transform: none;
   }
 }
 
-/* SIZE VARIANTS & ICONS */
+@media (prefers-reduced-motion: reduce) {
+  .tooltip {
+    transition: none;
+  }
+}
 
 .maturityBadgeMd {
-  font-size: 14px;
-  padding: 4px 12px;
-  line-height: 20px;
+  font-size: 0.875rem;
+  padding: 0.25rem 0.75rem;
+  line-height: 1.25rem;
 }
 
 .maturityIcon {
@@ -119,25 +121,22 @@ span.badgeLink {
   line-height: 1;
 }
 
-/* COLOR THEMES */
-
-.maturityStable { 
-  background: #e6f6e6; 
-  color: #006b00; 
+.maturityStable {
+  background: #e6f6e6;
+  color: #006b00;
 }
 
-.maturityPreview { 
-  background: #fff8e6; 
-  color: #7a4f00; 
+.maturityPreview {
+  background: #fff8e6;
+  color: #7a4f00;
 }
 
-.maturityExperimental { 
-  background: #eef9fd; 
-  color: #005f73; 
+.maturityExperimental {
+  background: #eef9fd;
+  color: #005f73;
 }
 
-/* Fallback styling for unrecognized YAML values */
-.maturityUnknown { 
-  background: #f0f0f0; 
-  color: #666; 
+.maturityUnknown {
+  background: #f0f0f0;
+  color: #666;
 }

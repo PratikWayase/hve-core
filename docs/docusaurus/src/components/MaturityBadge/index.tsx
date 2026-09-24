@@ -1,6 +1,6 @@
 // Copyright (c) 2026 Microsoft Corporation. All rights reserved.
 // SPDX-License-Identifier: MIT
-import React, { useId } from 'react';
+import React, { useId, useState } from 'react';
 import styles from './styles.module.css';
 
 export type KnownMaturity = 'Stable' | 'Preview' | 'Experimental';
@@ -63,29 +63,55 @@ export function normalizeMaturity(rawMaturity: string): MaturityLevel {
 interface MaturityBadgeProps {
   maturity: string;
   size?: 'sm' | 'md';
-  href?: string;
+  href: string;
 }
 
-export default function MaturityBadge({ maturity, size = 'sm', href }: MaturityBadgeProps): React.ReactElement {
+export default function MaturityBadge({
+  maturity,
+  size = 'sm',
+  href,
+}: MaturityBadgeProps): React.ReactElement {
   const normalized = normalizeMaturity(maturity);
-  const config = normalized === 'Unknown' ? UNKNOWN_MATURITY_DEFINITION : MATURITY_DEFINITIONS[normalized as KnownMaturity];
+  const config = normalized === 'Unknown'
+    ? UNKNOWN_MATURITY_DEFINITION
+    : MATURITY_DEFINITIONS[normalized];
   const tooltipId = useId();
+  const [isTooltipDismissed, setIsTooltipDismissed] = useState(false);
 
-  const Component = href ? 'a' : 'span';
-  const componentProps = href 
-    ? { href, className: styles.badgeLink } 
-    : { tabIndex: 0, role: 'button' as const, className: styles.badgeLink };
+  const label = (
+    <>
+      <span className={styles.maturityIcon} aria-hidden="true">
+        {config.icon}
+      </span>
+      {config.label}
+    </>
+  );
 
   return (
-    // badgeWrapper handles visual styling but passes clicks through to the card
-    <span className={`${styles.badgeWrapper} ${config.className} ${size === 'md' ? styles.maturityBadgeMd : ''}`}>
-      <Component {...componentProps} aria-describedby={tooltipId}>
-        <span className={styles.maturityIcon} aria-hidden="true">{config.icon}</span>
-        {config.label}
-      </Component>
-      
-      {/* CSS-Only Tooltip for A11y (Hover/Focus) */}
-      <span id={tooltipId} role="tooltip" className={styles.tooltip}>
+    <span
+      className={`${styles.badgeWrapper} ${config.className} ${size === 'md' ? styles.maturityBadgeMd : ''}`}
+    >
+      <a
+        href={href}
+        className={styles.badgeLink}
+        aria-describedby={tooltipId}
+        onBlur={() => setIsTooltipDismissed(false)}
+        onFocus={() => setIsTooltipDismissed(false)}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape') {
+            setIsTooltipDismissed(true);
+          }
+        }}
+        onMouseEnter={() => setIsTooltipDismissed(false)}
+        onMouseLeave={() => setIsTooltipDismissed(false)}
+      >
+        {label}
+      </a>
+      <span
+        id={tooltipId}
+        role="tooltip"
+        className={`${styles.tooltip} ${isTooltipDismissed ? styles.tooltipDismissed : ''}`}
+      >
         {config.glossary}
       </span>
     </span>

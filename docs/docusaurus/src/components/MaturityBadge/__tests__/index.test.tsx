@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: MIT
 import { describe, it, expect, jest } from '@jest/globals';
 import React from 'react';
-import { render, screen } from '@testing-library/react';
-import '@testing-library/jest-dom/jest-globals'; 
+import { act, fireEvent, render, screen } from '@testing-library/react';
+import '@testing-library/jest-dom/jest-globals';
 import { axe, toHaveNoViolations } from 'jest-axe';
 import MaturityBadge, { normalizeMaturity } from '../index';
 
@@ -50,7 +50,7 @@ describe('MaturityBadge', () => {
   ] as const)(
     'renders the %s maturity badge with correct icon, class, and tooltip text',
     (input, expectedText, expectedIcon, expectedClass, glossary) => {
-      render(<MaturityBadge maturity={input} />);
+      render(<MaturityBadge maturity={input} href="/docs/maturity" />);
 
       const badgeLink = screen.getByText(expectedText);
       expect(badgeLink).toBeInTheDocument();
@@ -70,7 +70,12 @@ describe('MaturityBadge', () => {
 
     const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
     
-    render(<MaturityBadge maturity="completely-invalid" />);
+    render(
+      <MaturityBadge
+        maturity="completely-invalid"
+        href="/docs/maturity"
+      />,
+    );
     
     const badgeLink = screen.getByText('Unknown');
     expect(badgeLink).toBeInTheDocument();
@@ -91,15 +96,37 @@ describe('MaturityBadge', () => {
     expect(link).toHaveAttribute('href', '/docs/stable');
   });
 
-  it('renders as a focusable span when no href is provided', () => {
-    render(<MaturityBadge maturity="stable" />);
-    const interactiveElement = screen.getByRole('button', { name: /Stable/i });
-    expect(interactiveElement.tagName.toLowerCase()).toBe('span');
-    expect(interactiveElement).toHaveAttribute('tabIndex', '0');
+  it('exposes the glossary as the trigger description', () => {
+    render(<MaturityBadge maturity="stable" href="/docs/stable" />);
+    const trigger = screen.getByRole('link', { name: 'Stable' });
+    const tooltip = screen.getByRole('tooltip');
+
+    expect(trigger).toHaveAttribute('aria-describedby', tooltip.id);
+    expect(trigger).toHaveAccessibleDescription(
+      'Production-ready, fully supported, and generally available (GA) for everyday use.',
+    );
+  });
+
+  it('dismisses the tooltip with Escape and resets after focus leaves', () => {
+    render(<MaturityBadge maturity="stable" href="/docs/stable" />);
+    const trigger = screen.getByRole('link', { name: 'Stable' });
+    const tooltip = screen.getByRole('tooltip');
+
+    act(() => trigger.focus());
+    fireEvent.keyDown(trigger, { key: 'Escape' });
+
+    expect(trigger).toHaveFocus();
+    expect(tooltip).toHaveClass('tooltipDismissed');
+
+    act(() => trigger.blur());
+    act(() => trigger.focus());
+    expect(tooltip).not.toHaveClass('tooltipDismissed');
   });
 
   it('has no accessibility violations', async () => {
-    const { container } = render(<MaturityBadge maturity="stable" />);
+    const { container } = render(
+      <MaturityBadge maturity="stable" href="/docs/stable" />,
+    );
     const results = await axe(container, {
       rules: { region: { enabled: false } },
     });
