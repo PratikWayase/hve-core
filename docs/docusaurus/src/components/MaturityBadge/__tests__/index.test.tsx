@@ -25,18 +25,18 @@ describe('normalizeMaturity', () => {
     expect(normalizeMaturity('typo')).toBe('Unknown');
     expect(normalizeMaturity('')).toBe('Unknown');
   });
-  
+
   it('logs a warning in dev environment for unknown values (Guardrail Pattern)', () => {
     const originalEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = 'development';
     const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
-    
+
     normalizeMaturity('invalid-yaml-value');
-    
+
     expect(consoleSpy).toHaveBeenCalledWith(
       expect.stringContaining('Unrecognized maturity value')
     );
-    
+
     consoleSpy.mockRestore();
     process.env.NODE_ENV = originalEnv;
   });
@@ -54,12 +54,12 @@ describe('MaturityBadge', () => {
 
       const badgeLink = screen.getByText(expectedText);
       expect(badgeLink).toBeInTheDocument();
-      
+
       const wrapper = badgeLink.parentElement;
       expect(wrapper).toHaveClass('badgeWrapper', expectedClass);
-      
+
       expect(screen.getByText(expectedIcon)).toBeInTheDocument();
-      
+
       const tooltip = screen.getByRole('tooltip');
       expect(tooltip).toBeInTheDocument();
       expect(tooltip).toHaveTextContent(glossary);
@@ -67,25 +67,24 @@ describe('MaturityBadge', () => {
   );
 
   it('renders the Unknown fallback UI for unrecognized values', () => {
-
     const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
-    
+
     render(
       <MaturityBadge
         maturity="completely-invalid"
         href="/docs/maturity"
       />,
     );
-    
+
     const badgeLink = screen.getByText('Unknown');
     expect(badgeLink).toBeInTheDocument();
-    
+
     const wrapper = badgeLink.parentElement;
     expect(wrapper).toHaveClass('badgeWrapper', 'maturityUnknown');
-    
+
     expect(screen.getByText('❓')).toBeInTheDocument();
     expect(screen.getByRole('tooltip')).toHaveTextContent('This maturity level is not recognized');
-    
+
     consoleSpy.mockRestore();
   });
 

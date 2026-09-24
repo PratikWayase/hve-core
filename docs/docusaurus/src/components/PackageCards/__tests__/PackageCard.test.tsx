@@ -69,10 +69,10 @@ describe('PackageCard', () => {
 
       const badgeLink = screen.getByText(maturity);
       expect(badgeLink).toBeInTheDocument();
-      
+
       const wrapper = badgeLink.parentElement;
       expect(wrapper).toHaveClass('badgeWrapper', maturityClass);
-      
+
       const tooltip = screen.getByRole('tooltip');
       expect(tooltip).toBeInTheDocument();
       expect(tooltip).toHaveTextContent(glossary);
