@@ -403,3 +403,5 @@ For an active issue tracker entry covering these gaps, see the [hve-core issues 
 * [npm ci](https://docs.npmjs.com/cli/commands/npm-ci) and [FFmpeg](https://ffmpeg.org/)
 * [Playwright for Python: browser launch options](https://playwright.dev/python/docs/api/class-browsertype#browser-type-launch)
 * [Repository security model](../../../../docs/security/security-model.md)
+
+🤖 Crafted with precision by ✨Copilot following brilliant human instruction, then carefully refined by our team of discerning human reviewers.
